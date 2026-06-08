@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Escape Room - Candado</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      min-height: 100vh;
+      background: #0a0a1a;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Segoe UI', sans-serif;
+      overflow: hidden;
+      position: relative;
+    }
+
+    /* === PARTICLES === */
+    #particles {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* === MAIN CONTAINER === */
+    .container {
+      position: relative;
+      z-index: 10;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 40px;
+    }
+
+    /* === LOCK === */
+    .lock-wrapper {
+      position: relative;
+      cursor: pointer;
+      transition: transform 0.3s ease;
+    }
+    .lock-wrapper:hover { transform: scale(1.05); }
+
+    .lock {
+      width: 120px;
+      height: 140px;
+      position: relative;
+    }
+
+    .lock-body {
+      width: 120px;
+      height: 90px;
+      background: linear-gradient(145deg, #c0a060, #8b6914, #d4af37);
+      border-radius: 18px;
+      position: absolute;
+      bottom: 0;
+      box-shadow: 0 8px 32px rgba(212,175,55,0.4), inset 0 2px 4px rgba(255,255,255,0.3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .lock-keyhole {
+      width: 20px;
+      height: 30px;
+      background: #0a0a1a;
+      border-radius: 50% 50% 0 0;
+      position: relative;
+      margin-top: -10px;
+    }
+    .lock-keyhole::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 8px;
+      height: 14px;
+      background: #0a0a1a;
+      border-radius: 0 0 3px 3px;
+    }
+
+    .lock-shackle {
+      width: 80px;
+      height: 70px;
+      border: 16px solid #d4af37;
+      border-bottom: none;
+      border-radius: 40px 40px 0 0;
+      position: absolute;
+      top: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      box-shadow: 0 -4px 16px rgba(212,175,55,0.3);
+      transition: transform 0.6s cubic-bezier(0.68, -0.55, 0.27, 1.55), top 0.6s ease;
+      transform-origin: center bottom;
+    }
+
+    .lock.unlocked .lock-shackle {
+      top: -30px;
+      transform: translateX(-50%) rotate(-35deg);
+    }
+
+    /* === INPUT PANEL === */
+    .panel {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(212,175,55,0.3);
+      border-radius: 20px;
+      padding: 36px 40px;
+      backdrop-filter: blur(12px);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 20px;
+      min-width: 520px;
+      box-shadow: 0 8px 40px rgba(0,0,0,0.5);
+    }
+
+    .panel h2 {
+      color: #d4af37;
+      font-size: 1.1rem;
+      font-weight: 400;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+    }
+
+    .code-inputs {
+      display: flex;
+      gap: 8px;
+      flex-wrap: nowrap;
+    }
+
+    .code-inputs input {
+      width: 42px;
+      height: 52px;
+      text-align: center;
+      font-size: 1.4rem;
+      font-weight: 700;
+      background: rgba(255,255,255,0.08);
+      border: 2px solid rgba(212,175,55,0.4);
+      border-radius: 12px;
+      color: #fff;
+      outline: none;
+      transition: border-color 0.2s, background 0.2s, transform 0.1s;
+      caret-color: #d4af37;
+    }
+
+    .code-inputs input:focus {
+      border-color: #d4af37;
+      background: rgba(212,175,55,0.12);
+      transform: scale(1.05);
+    }
+
+    .code-inputs input.shake {
+      animation: shake 0.4s ease;
+      border-color: #e05555;
+    }
+
+    @keyframes shake {
+      0%,100% { transform: translateX(0); }
+      20% { transform: translateX(-6px); }
+      40% { transform: translateX(6px); }
+      60% { transform: translateX(-4px); }
+      80% { transform: translateX(4px); }
+    }
+
+    .btn-unlock {
+      padding: 14px 40px;
+      background: linear-gradient(135deg, #d4af37, #8b6914);
+      color: #0a0a1a;
+      border: none;
+      border-radius: 50px;
+      font-size: 1rem;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s;
+      box-shadow: 0 4px 20px rgba(212,175,55,0.4);
+    }
+    .btn-unlock:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 28px rgba(212,175,55,0.6);
+    }
+    .btn-unlock:active { transform: translateY(0); }
+
+    /* === SUCCESS SCREEN === */
+    .success-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.85);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.5s ease;
+    }
+
+    .success-overlay.visible {
+      opacity: 1;
+      pointer-events: all;
+    }
+
+    .success-card {
+      background: linear-gradient(135deg, #1a1a2e, #16213e);
+      border: 2px solid #d4af37;
+      border-radius: 30px;
+      padding: 60px 80px;
+      text-align: center;
+      box-shadow: 0 0 80px rgba(212,175,55,0.3), 0 20px 60px rgba(0,0,0,0.6);
+      transform: scale(0.7);
+      transition: transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .success-overlay.visible .success-card {
+      transform: scale(1);
+    }
+
+    .trophy {
+      font-size: 5rem;
+      margin-bottom: 20px;
+      display: block;
+      animation: bounce 1s ease infinite alternate;
+    }
+
+    @keyframes bounce {
+      from { transform: translateY(0) rotate(-5deg); }
+      to   { transform: translateY(-12px) rotate(5deg); }
+    }
+
+    .success-card h1 {
+      font-size: 2.8rem;
+      background: linear-gradient(135deg, #d4af37, #fff, #d4af37);
+      background-size: 200%;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      animation: shimmer 2s linear infinite;
+      margin-bottom: 16px;
+    }
+
+    @keyframes shimmer {
+      0% { background-position: 0% }
+      100% { background-position: 200% }
+    }
+
+    .success-card p {
+      color: rgba(255,255,255,0.7);
+      font-size: 1.2rem;
+      letter-spacing: 1px;
+    }
+
+    .stars {
+      margin-top: 30px;
+      font-size: 2rem;
+      letter-spacing: 8px;
+      animation: twinkle 1.5s ease-in-out infinite alternate;
+    }
+
+    @keyframes twinkle {
+      from { opacity: 0.6; transform: scale(0.95); }
+      to   { opacity: 1;   transform: scale(1.05); }
+    }
+
+    .btn-reset {
+      margin-top: 36px;
+      padding: 12px 32px;
+      background: transparent;
+      border: 2px solid rgba(212,175,55,0.6);
+      color: #d4af37;
+      border-radius: 50px;
+      font-size: 0.9rem;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: background 0.2s, color 0.2s;
+    }
+    .btn-reset:hover {
+      background: rgba(212,175,55,0.15);
+    }
+
+    /* === CONFETTI === */
+    .confetti-piece {
+      position: fixed;
+      width: 10px;
+      height: 10px;
+      top: -20px;
+      border-radius: 2px;
+      animation: confetti-fall linear forwards;
+      z-index: 200;
+    }
+
+    @keyframes confetti-fall {
+      0%   { transform: translateY(0) rotateZ(0deg) rotateX(0deg);   opacity: 1; }
+      100% { transform: translateY(110vh) rotateZ(720deg) rotateX(360deg); opacity: 0; }
+    }
+
+    /* === ADMIN LINK === */
+    .admin-link {
+      position: fixed;
+      bottom: 20px;
+      right: 24px;
+      color: rgba(255,255,255,0.15);
+      font-size: 0.75rem;
+      cursor: pointer;
+      text-decoration: none;
+      letter-spacing: 1px;
+      transition: color 0.3s;
+      z-index: 20;
+    }
+    .admin-link:hover { color: rgba(212,175,55,0.6); }
+
+    /* === ADMIN MODAL === */
+    .admin-modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.7);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 300;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s;
+    }
+    .admin-modal.visible {
+      opacity: 1;
+      pointer-events: all;
+    }
+
+    .admin-card {
+      background: #0f0f20;
+      border: 1px solid rgba(212,175,55,0.4);
+      border-radius: 20px;
+      padding: 40px;
+      min-width: 340px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .admin-card h3 {
+      color: #d4af37;
+      font-size: 1rem;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+    .admin-card label {
+      color: rgba(255,255,255,0.6);
+      font-size: 0.85rem;
+      letter-spacing: 1px;
+    }
+    .admin-card input {
+      padding: 12px 16px;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(212,175,55,0.3);
+      border-radius: 10px;
+      color: #fff;
+      font-size: 1rem;
+      outline: none;
+    }
+    .admin-card input:focus { border-color: #d4af37; }
+
+    .admin-actions {
+      display: flex;
+      gap: 12px;
+      margin-top: 8px;
+    }
+    .btn-save {
+      flex: 1;
+      padding: 12px;
+      background: linear-gradient(135deg, #d4af37, #8b6914);
+      color: #0a0a1a;
+      border: none;
+      border-radius: 10px;
+      font-weight: 700;
+      cursor: pointer;
+      letter-spacing: 1px;
+    }
+    .btn-cancel {
+      flex: 1;
+      padding: 12px;
+      background: transparent;
+      color: rgba(255,255,255,0.5);
+      border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 10px;
+      cursor: pointer;
+    }
+
+    .admin-status {
+      font-size: 0.85rem;
+      color: #6fcf6f;
+      text-align: center;
+      min-height: 20px;
+    }
+
+    .glow-ring {
+      position: absolute;
+      width: 200px;
+      height: 200px;
+      border-radius: 50%;
+      border: 2px solid rgba(212,175,55,0.15);
+      animation: pulse-ring 3s ease-in-out infinite;
+      pointer-events: none;
+    }
+    .glow-ring:nth-child(2) { animation-delay: 1s; width: 300px; height: 300px; }
+    .glow-ring:nth-child(3) { animation-delay: 2s; width: 400px; height: 400px; }
+
+    @keyframes pulse-ring {
+      0%, 100% { opacity: 0; transform: scale(0.9); }
+      50%       { opacity: 1; transform: scale(1.05); }
+    }
+  </style>
+</head>
+<body>
+
+<canvas id="particles"></canvas>
+
+<div class="container">
+  <!-- Glow rings -->
+  <div style="position:absolute;display:flex;align-items:center;justify-content:center;width:0;height:0;">
+    <div class="glow-ring"></div>
+    <div class="glow-ring"></div>
+    <div class="glow-ring"></div>
+  </div>
+
+  <!-- Lock -->
+  <div class="lock-wrapper">
+    <div class="lock" id="lock">
+      <div class="lock-shackle"></div>
+      <div class="lock-body">
+        <div class="lock-keyhole"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Input panel -->
+  <div class="panel">
+    <h2>Introduce el código</h2>
+    <div class="code-inputs" id="codeInputs">
+      <input type="text" maxlength="1" inputmode="text" autocomplete="off" />
+      <input type="text" maxlength="1" inputmode="text" autocomplete="off" />
+      <input type="text" maxlength="1" inputmode="text" autocomplete="off" />
+      <input type="text" maxlength="1" inputmode="text" autocomplete="off" />
+      <input type="text" maxlength="1" inputmode="text" autocomplete="off" />
+      <input type="text" maxlength="1" inputmode="text" autocomplete="off" />
+      <input type="text" maxlength="1" inputmode="text" autocomplete="off" />
+      <input type="text" maxlength="1" inputmode="text" autocomplete="off" />
+      <input type="text" maxlength="1" inputmode="text" autocomplete="off" />
+      <input type="text" maxlength="1" inputmode="text" autocomplete="off" />
+    </div>
+    <button class="btn-unlock" id="btnUnlock">Desbloquear</button>
+  </div>
+</div>
+
+<!-- Success overlay -->
+<div class="success-overlay" id="successOverlay">
+  <div class="success-card">
+    <span class="trophy">🏆</span>
+    <h1>¡Enhorabuena!</h1>
+    <p>Lo has conseguido</p>
+    <div class="stars">⭐ ⭐ ⭐</div>
+    <button class="btn-reset" id="btnReset">Volver a intentar</button>
+  </div>
+</div>
+
+<!-- Admin modal -->
+<div class="admin-modal" id="adminModal">
+  <div class="admin-card">
+    <h3>Panel de Administrador</h3>
+    <label>Contraseña de administrador</label>
+    <input type="password" id="adminPassword" placeholder="Contraseña" />
+    <label>Nuevo código de desbloqueo (10 caracteres)</label>
+    <input type="text" id="newCode" maxlength="10" placeholder="ej. AB12CD34EF" autocomplete="off" />
+    <div class="admin-actions">
+      <button class="btn-save" id="btnSave">Guardar</button>
+      <button class="btn-cancel" id="btnCancel">Cancelar</button>
+    </div>
+    <div class="admin-status" id="adminStatus"></div>
+  </div>
+</div>
+
+<a class="admin-link" id="adminLink">⚙ admin</a>
+
+<script>
+  // ── State ────────────────────────────────────────────────────
+  const ADMIN_PASS = 'admin123'; // Change this in production
+  let secretCode = localStorage.getItem('escapeCode') || '1234567890';
+
+  // ── Particles background ─────────────────────────────────────
+  const canvas = document.getElementById('particles');
+  const ctx = canvas.getContext('2d');
+  let particles = [];
+
+  function resize() {
+    canvas.width  = window.innerWidth;
+    canvas.height = window.innerHeight;
+  }
+  window.addEventListener('resize', resize);
+  resize();
+
+  for (let i = 0; i < 60; i++) {
+    particles.push({
+      x: Math.random() * canvas.width,
+      y: Math.random() * canvas.height,
+      r: Math.random() * 1.5 + 0.5,
+      dx: (Math.random() - 0.5) * 0.4,
+      dy: (Math.random() - 0.5) * 0.4,
+      alpha: Math.random() * 0.5 + 0.1
+    });
+  }
+
+  function drawParticles() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    particles.forEach(p => {
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(212,175,55,${p.alpha})`;
+      ctx.fill();
+      p.x += p.dx;
+      p.y += p.dy;
+      if (p.x < 0 || p.x > canvas.width)  p.dx *= -1;
+      if (p.y < 0 || p.y > canvas.height) p.dy *= -1;
+    });
+    requestAnimationFrame(drawParticles);
+  }
+  drawParticles();
+
+  // ── Code inputs behaviour ─────────────────────────────────────
+  const inputs = Array.from(document.querySelectorAll('#codeInputs input'));
+
+  inputs.forEach((inp, i) => {
+    inp.addEventListener('input', () => {
+      inp.value = inp.value.toUpperCase().slice(-1);
+      if (inp.value && i < inputs.length - 1) inputs[i + 1].focus();
+    });
+    inp.addEventListener('keydown', e => {
+      if (e.key === 'Backspace' && !inp.value && i > 0) inputs[i - 1].focus();
+      if (e.key === 'Enter') tryUnlock();
+    });
+    inp.addEventListener('focus', () => inp.select());
+  });
+
+  inputs[0].focus();
+
+  // ── Unlock logic ──────────────────────────────────────────────
+  function tryUnlock() {
+    const entered = inputs.map(i => i.value).join('');
+    if (entered.length < 10) return;
+
+    if (entered.toUpperCase() === secretCode.toUpperCase()) {
+      unlock();
+    } else {
+      wrongCode();
+    }
+  }
+
+  function unlock() {
+    document.getElementById('lock').classList.add('unlocked');
+    setTimeout(() => {
+      launchConfetti();
+      document.getElementById('successOverlay').classList.add('visible');
+    }, 700);
+  }
+
+  function wrongCode() {
+    inputs.forEach(inp => inp.classList.add('shake'));
+    setTimeout(() => inputs.forEach(inp => inp.classList.remove('shake')), 500);
+    inputs.forEach(inp => inp.value = '');
+    inputs[0].focus();
+  }
+
+  document.getElementById('btnUnlock').addEventListener('click', tryUnlock);
+
+  // ── Confetti ──────────────────────────────────────────────────
+  const colors = ['#d4af37','#fff','#ff6b6b','#6bcbff','#a8ff78','#f7971e'];
+
+  function launchConfetti() {
+    for (let i = 0; i < 120; i++) {
+      setTimeout(() => {
+        const piece = document.createElement('div');
+        piece.className = 'confetti-piece';
+        piece.style.left = Math.random() * 100 + 'vw';
+        piece.style.background = colors[Math.floor(Math.random() * colors.length)];
+        piece.style.width  = (Math.random() * 10 + 6) + 'px';
+        piece.style.height = (Math.random() * 6 + 6) + 'px';
+        piece.style.borderRadius = Math.random() > 0.5 ? '50%' : '2px';
+        const duration = Math.random() * 2 + 2;
+        piece.style.animationDuration = duration + 's';
+        piece.style.animationDelay = '0s';
+        document.body.appendChild(piece);
+        setTimeout(() => piece.remove(), duration * 1000 + 100);
+      }, i * 25);
+    }
+  }
+
+  // ── Reset ─────────────────────────────────────────────────────
+  document.getElementById('btnReset').addEventListener('click', () => {
+    document.getElementById('successOverlay').classList.remove('visible');
+    document.getElementById('lock').classList.remove('unlocked');
+    inputs.forEach(inp => inp.value = '');
+    inputs[0].focus();
+  });
+
+  // ── Admin panel ───────────────────────────────────────────────
+  document.getElementById('adminLink').addEventListener('click', () => {
+    document.getElementById('adminModal').classList.add('visible');
+    document.getElementById('adminPassword').focus();
+  });
+
+  document.getElementById('btnCancel').addEventListener('click', closeAdmin);
+
+  document.getElementById('adminModal').addEventListener('click', e => {
+    if (e.target === document.getElementById('adminModal')) closeAdmin();
+  });
+
+  function closeAdmin() {
+    document.getElementById('adminModal').classList.remove('visible');
+    document.getElementById('adminPassword').value = '';
+    document.getElementById('newCode').value = '';
+    document.getElementById('adminStatus').textContent = '';
+  }
+
+  document.getElementById('btnSave').addEventListener('click', () => {
+    const pass = document.getElementById('adminPassword').value;
+    const code = document.getElementById('newCode').value.trim().toUpperCase();
+    const status = document.getElementById('adminStatus');
+
+    if (pass !== ADMIN_PASS) {
+      status.style.color = '#e05555';
+      status.textContent = 'Contraseña incorrecta.';
+      return;
+    }
+    if (code.length !== 10) {
+      status.style.color = '#e05555';
+      status.textContent = 'El código debe tener exactamente 10 caracteres.';
+      return;
+    }
+
+    secretCode = code;
+    localStorage.setItem('escapeCode', code);
+    status.style.color = '#6fcf6f';
+    status.textContent = `Código actualizado a "${code}" ✓`;
+    setTimeout(closeAdmin, 1500);
+  });
+</script>
+</body>
+</html>
