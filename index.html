@@ -447,6 +447,11 @@
     { accent:'#d4af37', dark:'#8b6914', bg:'#0a0a1a', particle:'212,175,55', name:'Cámara Dorada' },
     { accent:'#4dabf7', dark:'#1971c2', bg:'#06121f', particle:'77,171,247',  name:'Estación Espacial' },
     { accent:'#ff6b6b', dark:'#c0392b', bg:'#1a0808', particle:'255,107,107', name:'Zona de Peligro' },
+    { accent:'#51cf66', dark:'#2b8a3e', bg:'#07140c', particle:'81,207,102',  name:'Laboratorio Tóxico' },
+    { accent:'#cc5de8', dark:'#9c36b5', bg:'#120618', particle:'204,93,232',  name:'Cripta Arcana' },
+    { accent:'#22d3ee', dark:'#0e7490', bg:'#04141a', particle:'34,211,238',  name:'Abismo Submarino' },
+    { accent:'#ff922b', dark:'#d9480f', bg:'#1a0f04', particle:'255,146,43',  name:'Cámara de Lava' },
+    { accent:'#f783ac', dark:'#c2255c', bg:'#170610', particle:'247,131,172', name:'Jardín Encantado' },
   ];
 
   let cfg, state;
@@ -480,7 +485,10 @@
   }
 
   function applyTheme(idx) {
-    const t = ROOM_THEMES[idx % ROOM_THEMES.length];
+    // Per-room theme override from config, else cycle through themes by room index.
+    const room = cfg.rooms[idx];
+    const themeIdx = (room && Number.isInteger(room.theme)) ? room.theme : idx;
+    const t = ROOM_THEMES[((themeIdx % ROOM_THEMES.length) + ROOM_THEMES.length) % ROOM_THEMES.length];
     const r = document.documentElement.style;
     r.setProperty('--accent', t.accent);
     r.setProperty('--accent-dark', t.dark);

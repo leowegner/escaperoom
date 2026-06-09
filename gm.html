@@ -51,12 +51,13 @@
     .b-ghost { background:transparent; border:1px solid rgba(212,175,55,0.4); color:var(--accent); }
 
     label { display:block; color:rgba(255,255,255,0.6); font-size:0.8rem; margin:14px 0 6px; letter-spacing:1px; }
-    input[type=text], input[type=number], textarea {
+    input[type=text], input[type=number], textarea, select {
       width:100%; padding:10px 14px; background:rgba(255,255,255,0.06);
       border:1px solid rgba(212,175,55,0.3); border-radius:8px; color:#fff;
       font-size:0.95rem; outline:none; font-family:inherit;
     }
-    input:focus, textarea:focus { border-color:var(--accent); }
+    select option { background:#0a0a1a; color:#fff; }
+    input:focus, textarea:focus, select:focus { border-color:var(--accent); }
     textarea { resize:vertical; min-height:60px; }
 
     .room-block { border:1px solid rgba(255,255,255,0.08); border-radius:12px; padding:16px; margin-bottom:14px; position:relative; }
@@ -157,6 +158,12 @@
 <script src="shared.js"></script>
 <script>
   const GM_PASS = 'admin123';
+
+  // Keep in sync with ROOM_THEMES in index.html
+  const THEME_NAMES = [
+    'Cámara Dorada', 'Estación Espacial', 'Zona de Peligro', 'Laboratorio Tóxico',
+    'Cripta Arcana', 'Abismo Submarino', 'Cámara de Lava', 'Jardín Encantado',
+  ];
 
   // ── Login ──
   const gate = document.getElementById('gate');
@@ -274,6 +281,11 @@
       <button class="del-room" title="Eliminar">×</button>
       <label>Código de desbloqueo</label>
       <input type="text" class="room-code" value="${(room.code||'').replace(/"/g,'&quot;')}" placeholder="ej. 1234567890" />
+      <label>Tema visual</label>
+      <select class="room-theme">
+        <option value="-1">Automático (por orden)</option>
+        ${THEME_NAMES.map((n,ti)=>`<option value="${ti}" ${room.theme===ti?'selected':''}>${n}</option>`).join('')}
+      </select>
       <label>Pistas (una por línea)</label>
       <textarea class="room-hints" placeholder="Primera pista&#10;Segunda pista&#10;Tercera pista">${(room.hints||[]).join('\n')}</textarea>
     `;
@@ -295,7 +307,12 @@
     document.querySelectorAll('#roomsConfig .room-block').forEach(b=>{
       const code = b.querySelector('.room-code').value.trim().toUpperCase();
       const hints = b.querySelector('.room-hints').value.split('\n').map(h=>h.trim()).filter(Boolean);
-      if (code) rooms.push({ code, hints });
+      const theme = parseInt(b.querySelector('.room-theme').value);
+      if (code) {
+        const room = { code, hints };
+        if (theme >= 0) room.theme = theme;   // -1 = auto
+        rooms.push(room);
+      }
     });
     if (!rooms.length) { alert('Define al menos una sala con código.'); return; }
     ER.setConfig({ durationSec: dur*60, rooms });
